@@ -1,0 +1,15 @@
+{
+  "markdownlint.config": {
+    "MD033": {
+      "allowed_elements": ["p", "img", "a", "h1"]
+    },
+    "MD041": false
+  },
+  "editor.defaultFormatter": "biomejs.biome",
+  "prettier.enable": false,
+  "[markdown]": {
+    "editor.defaultFormatter": "yzhang.markdown-all-in-one",
+    "editor.formatOnSave": true
+  },
+  "liveServer.settings.port": 5501
+}
