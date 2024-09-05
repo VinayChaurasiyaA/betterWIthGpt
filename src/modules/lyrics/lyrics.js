@@ -1,13 +1,38 @@
-let apiKey = null;
+
 BetterLyrics.Lyrics = {
   createLyrics: function () {
-    BetterLyrics.DOM.requestSongInfo(e => {
+    BetterLyrics.DOM.requestSongInfo(async e => {
       const song = e.song;
       const artist = e.artist;
       BetterLyrics.Utils.log(BetterLyrics.Constants.FETCH_LYRICS_LOG, song, artist);
 
       const url = `${BetterLyrics.Constants.LYRICS_API_URL}?s=${encodeURIComponent(BetterLyrics.Utils.unEntity(song))}&a=${encodeURIComponent(BetterLyrics.Utils.unEntity(artist))}`;
 
+      const apiKey = await new Promise((resolve) => {
+        chrome.storage.sync.get(['apiValue'], (result) => {
+          resolve(result.apiValue);
+        });
+      });
+    
+      if (!apiKey) {
+        console.error("GPT API key not found in storage");
+      }
+      console.log('API Key:', apiKey);
+
+      const targetLanguage = await new Promise((resolve) => {
+        chrome.storage.sync.get(['translationLanguage'], (result) => {
+          resolve(result.translationLanguage);
+        });
+      }) || "en";
+
+      const translationEnable = await new Promise((resolve) => {
+        chrome.storage.sync.get(['isTranslateEnabled'], (result) => {
+          resolve(result.isTranslateEnabled);
+        });
+      }) || false;
+
+      console.log('Translation Language:', targetLanguage);
+      console.log('Translation Enabled:', translationEnable);
       fetch(url)
         .then(response => {
           if (!response.ok) {
@@ -16,9 +41,15 @@ BetterLyrics.Lyrics = {
 
           return response.json();
         })
-        .then(data => {
-          const lyrics = data.lyrics;
-
+        .then(async data => {
+          let lyrics = data.lyrics;
+          console.log('Original Lyrics:', lyrics);
+          // TODO: Implement translation using GPT
+          if(lyrics && lyrics.length !== 0 && translationEnable){
+            const translatedLyrics = await BetterLyrics.Translation.translateTextUsingGPT(lyrics, targetLanguage, apiKey);
+            lyrics = translatedLyrics;
+          }
+          console.log('Lyrics:', lyrics);
           BetterLyrics.App.lang = data.language;
           BetterLyrics.DOM.setRtlAttributes(data.isRtlLanguage);
 
@@ -48,7 +79,7 @@ BetterLyrics.Lyrics = {
     });
   },
 
-  injectLyrics: function (lyrics) {
+  injectLyrics: async function (lyrics) {
     let lyricsWrapper = BetterLyrics.DOM.createLyricsWrapper();
     BetterLyrics.DOM.addFooter();
 
@@ -69,6 +100,47 @@ BetterLyrics.Lyrics = {
     });
 
     const allZero = lyrics.every(item => item.startTimeMs === "0");
+    // let apiKey;
+    // try this out!
+    
+    // const target_language = "en";
+    // const translatedValues = BetterLyrics.Translation.translateTextUsingGPT(lyrics, target_language, apiKey);
+    // console.log(translatedValues);
+    // lyrics should be in the down size instead of being at the important so it might work
+    // if there is anything it would work
+    // if(apiKey !== null || apiKey || undefined || apiKey !== ""){
+      // BetterLyrics.Translation.onTranslationEnabled(items => {
+      //   target_language = items.translationLanguage || "en";
+      // });
+      
+      // let source_language = BetterLyrics.App.lang ?? "en";
+      // if (source_language !== target_language) {
+      //   BetterLyrics.Translation.translateTextUsingGPT(lyrics, target_language, apiKey).then(translatedLyrics => {
+      //     if (translatedLyrics) {
+      //       translatedLyrics.forEach((translatedLineObj) => {
+      //         let translatedLine = document.createElement("span");
+      //         translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
+    
+      //         if (translatedLineObj.translatedLines.trim() !== "♪" && translatedLineObj.translatedLines.trim() !== "") {
+      //           translatedLine.textContent = "\n" + translatedLineObj.translatedLines;
+      //           line.appendChild(translatedLine);
+      //         } else {
+      //           translatedLine.textContent = "\n" + "—";
+      //           line.appendChild(translatedLine);
+      //         }
+      //       });
+      //     } else {
+      //       // Handle translation failure
+      //       console.error("Translation failed.");
+      //     }
+      //   }).catch(error => {
+      //     console.error("Translation error:", error);
+      //   });
+      // }
+    // }
+    // const value = BetterLyrics.Translation.translateTextUsingGPT(lyrics, target_language, apiKey);
+    // console.log(value);
+    // console.log("original lyrics:" , lyrics);
 
     lyrics.forEach(item => {
       let line = document.createElement("div");
@@ -97,45 +169,40 @@ BetterLyrics.Lyrics = {
         line.appendChild(span);
       });
 
-      // BetterLyrics.Translation.getApi(apiValue => {
-      //   if(apiValue.apiValue === undefined || apiValue.apiValue === ""){
-      //     console.log('No API Key found');
-      //     return;
-      //   }
-      //   if(apiKey === null){
-      //     console.log('Retrieved API Value:', apiValue.apiValue);
-      //     apiKey = apiValue.apiValue;
-      //   }
-      //   else {
-      //     console.log('API Key already exists:', apiKey);
-      //     return; // Exit early if API key already exists
-      //   }
-      //   // return apiValue.apiValue;  
-      // });
-
-      BetterLyrics.Translation.onTranslationEnabled(items => {
-        let translatedLine = document.createElement("span");
-        translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
-
-        let source_language = BetterLyrics.App.lang ?? "en";
-        let target_language = items.translationLanguage || "en";
-
-        if (source_language !== target_language) {
-          if (item.words.trim() !== "♪" && item.words.trim() !== "") {
-            BetterLyrics.Translation.translateText(item.words, target_language).then(result => {
-              if (result) {
-                if (result.originalLanguage !== target_language) {
-                  translatedLine.textContent = "\n" + result.translatedText;
-                  line.appendChild(translatedLine);
-                }
+      BetterLyrics.Translation.onTranslationEnabled((items) => {
+        items.forEach((item) => {
+          let translatedLine = document.createElement("span");
+          translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
+      
+          let source_language = BetterLyrics.App.lang ?? "en";
+          let target_language = items.translationLanguage || "en";
+      
+          // Check if a translation is needed
+          if (source_language !== target_language) {
+            if (item.words.trim() !== "♪" && item.words.trim() !== "") {
+              // Only call translateText if the translatedLine is not already present
+              if (!item.translatedLine) {
+                BetterLyrics.Translation.translateText(item.words, target_language).then((result) => {
+                  if (result) {
+                    if (result.originalLanguage !== target_language) {
+                      translatedLine.textContent = "\n" + result.translatedText;
+                      line.appendChild(translatedLine);
+                    }
+                  } else {
+                    translatedLine.textContent = "\n" + "—";
+                    line.appendChild(translatedLine);
+                  }
+                });
               } else {
-                translatedLine.textContent = "\n" + "—";
+                // If translatedLine is already present, use it directly
+                translatedLine.textContent = "\n" + item.translatedLine;
                 line.appendChild(translatedLine);
               }
-            });
+            }
           }
-        }
+        });
       });
+      
 
       try {
         document.getElementsByClassName(BetterLyrics.Constants.LYRICS_CLASS)[0].appendChild(line);
