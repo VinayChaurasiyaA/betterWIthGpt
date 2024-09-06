@@ -47,7 +47,9 @@ BetterLyrics.Lyrics = {
           // TODO: Implement translation using GPT
           if(lyrics && lyrics.length !== 0 && translationEnable){
             const translatedLyrics = await BetterLyrics.Translation.translateTextUsingGPT(lyrics, targetLanguage, apiKey);
-            lyrics = translatedLyrics;
+            if (translatedLyrics) {
+              lyrics = translatedLyrics; // Assign translated lyrics if available
+            }
           }
           console.log('Lyrics:', lyrics);
           BetterLyrics.App.lang = data.language;
@@ -68,7 +70,7 @@ BetterLyrics.Lyrics = {
           } catch (_err) {
             BetterLyrics.Utils.log(BetterLyrics.Constants.LYRICS_TAB_NOT_DISABLED_LOG);
           }
-          BetterLyrics.Lyrics.injectLyrics(lyrics);
+          BetterLyrics.Lyrics.injectLyrics(lyrics , translationEnable , targetLanguage);
         })
         .catch(err => {
           clearInterval(BetterLyrics.App.lyricsCheckInterval);
@@ -79,7 +81,7 @@ BetterLyrics.Lyrics = {
     });
   },
 
-  injectLyrics: async function (lyrics) {
+  injectLyrics: async function (lyrics , translationEnable , targetLanguage) {
     let lyricsWrapper = BetterLyrics.DOM.createLyricsWrapper();
     BetterLyrics.DOM.addFooter();
 
@@ -169,39 +171,72 @@ BetterLyrics.Lyrics = {
         line.appendChild(span);
       });
 
-      BetterLyrics.Translation.onTranslationEnabled((items) => {
-        items.forEach((item) => {
+      // console.log("Items hai idhar: 0" , JSON.stringify(words));
+      if (translationEnable) {
+        lyrics.forEach((item) => {
+          // console.log("Items hai idhar: 1", JSON.stringify(item));
           let translatedLine = document.createElement("span");
           translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
       
-          let source_language = BetterLyrics.App.lang ?? "en";
-          let target_language = items.translationLanguage || "en";
-      
-          // Check if a translation is needed
-          if (source_language !== target_language) {
-            if (item.words.trim() !== "♪" && item.words.trim() !== "") {
-              // Only call translateText if the translatedLine is not already present
-              if (!item.translatedLine) {
-                BetterLyrics.Translation.translateText(item.words, target_language).then((result) => {
-                  if (result) {
-                    if (result.originalLanguage !== target_language) {
-                      translatedLine.textContent = "\n" + result.translatedText;
-                      line.appendChild(translatedLine);
-                    }
-                  } else {
-                    translatedLine.textContent = "\n" + "—";
-                    line.appendChild(translatedLine);
-                  }
-                });
-              } else {
-                // If translatedLine is already present, use it directly
-                translatedLine.textContent = "\n" + item.translatedLine;
-                line.appendChild(translatedLine);
-              }
+          if (item.words.trim() !== "♪" && item.words.trim() !== "") {
+            // Only call translateText if the translatedLine is not already present
+            if (!item.translatedLines) {
+              BetterLyrics.Translation.translateText(item.words, targetLanguage).then((result) => {
+                if (result && result.originalLanguage !== targetLanguage) {
+                  // console.log("Items hai idhar: 2", JSON.stringify(result));
+                  translatedLine.textContent = result.translatedText; // Only set the translated text
+                  line.appendChild(translatedLine); // Append the translated line immediately
+                }
+              });
+            } else {
+              // If translatedLine is already present, use it directly
+              // console.log("Items hai idhar: 3", JSON.stringify(item.translatedLines));
+              translatedLine.textContent = item.translatedLines;
+              line.appendChild(translatedLine); // Append the translated line immediately
             }
           }
         });
-      });
+      }
+      
+
+      // BetterLyrics.Translation.onTranslationEnabled((items) => {
+      //   console.log("Items hai idhar: primary" , items);
+      //   console.log("Items hai idhar: primary 1" , JSON.stringify(items));
+      //   items.forEach((item) => {
+      //     console.log("Items hai idhar: 1" , JSON.stringify(item)); // it should give me something that whether I am getting anything or not
+      //     console.log("Items hai idhar: 2" , item); // it should give me something that whether I am getting anything or not
+      //     console.log("Items hai idhar 3: " , item.json()); // it should give me something that whether I am getting anything or not
+      //     let translatedLine = document.createElement("span");
+      //     translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
+      
+      //     let source_language = BetterLyrics.App.lang ?? "en";
+      //     let target_language = items.translationLanguage || "en";
+      
+      //     // Check if a translation is needed
+      //     if (source_language !== target_language) {
+      //       if (item.words.trim() !== "♪" && item.words.trim() !== "") {
+      //         // Only call translateText if the translatedLine is not already present
+      //         if (!item.translatedLines) {
+      //           BetterLyrics.Translation.translateText(item.words, target_language).then((result) => {
+      //             if (result) {
+      //               if (result.originalLanguage !== target_language) {
+      //                 translatedLine.textContent = "\n" + result.translatedText;
+      //                 line.appendChild(translatedLine);
+      //               }
+      //             } else {
+      //               translatedLine.textContent = "\n" + "—";
+      //               line.appendChild(translatedLine);
+      //             }
+      //           });
+      //         } else {
+      //           // If translatedLine is already present, use it directly
+      //           translatedLine.textContent = "\n" + item.translatedLines;
+      //           line.appendChild(translatedLine);
+      //         }
+      //       }
+      //     }
+      //   });
+      // });
       
 
       try {

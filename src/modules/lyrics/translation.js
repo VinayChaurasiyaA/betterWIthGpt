@@ -54,12 +54,12 @@ BetterLyrics.Translation = {
         })
       });
       const data = await response.json();
-      console.log(data);
+      // console.log(data);
       const translatedText = data.choices[0].message.content.trim();
   
       // Split the translated text by newlines to handle each translated line
       const translatedLines = translatedText.split('\n');
-      console.log(translatedLines);
+      // console.log(translatedLines);
   
       // Map the translated lines back to the original lyrics format
       const translatedLyrics = lyrics.map((line, index) => ({
