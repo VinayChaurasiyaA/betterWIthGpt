@@ -173,7 +173,7 @@ BetterLyrics.Lyrics = {
 
       // console.log("Items hai idhar: 0" , JSON.stringify(words));
       if (translationEnable) {
-        lyrics.forEach((item) => {
+        // lyrics.forEach((item) => {
           // console.log("Items hai idhar: 1", JSON.stringify(item));
           let translatedLine = document.createElement("span");
           translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
@@ -195,7 +195,7 @@ BetterLyrics.Lyrics = {
               line.appendChild(translatedLine); // Append the translated line immediately
             }
           }
-        });
+        // });
       }
       
 
