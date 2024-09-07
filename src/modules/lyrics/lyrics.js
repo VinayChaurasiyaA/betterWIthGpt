@@ -13,12 +13,10 @@ BetterLyrics.Lyrics = {
           resolve(result.apiValue);
         });
       });
-    
-      if (!apiKey) {
-        console.error("GPT API key not found in storage");
-      }
-      console.log('API Key:', apiKey);
 
+      if (!apiKey) {
+        BetterLyrics.Utils.log(BetterLyrics.Constants.API_KEY_NOT_FOUND_LOG);
+      }
       const targetLanguage = await new Promise((resolve) => {
         chrome.storage.sync.get(['translationLanguage'], (result) => {
           resolve(result.translationLanguage);
@@ -31,8 +29,6 @@ BetterLyrics.Lyrics = {
         });
       }) || false;
 
-      console.log('Translation Language:', targetLanguage);
-      console.log('Translation Enabled:', translationEnable);
       fetch(url)
         .then(response => {
           if (!response.ok) {
@@ -43,15 +39,13 @@ BetterLyrics.Lyrics = {
         })
         .then(async data => {
           let lyrics = data.lyrics;
-          console.log('Original Lyrics:', lyrics);
-          // TODO: Implement translation using GPT
+          // DONE : Implement translation using GPT
           if(lyrics && lyrics.length !== 0 && translationEnable){
             const translatedLyrics = await BetterLyrics.Translation.translateTextUsingGPT(lyrics, targetLanguage, apiKey);
             if (translatedLyrics) {
-              lyrics = translatedLyrics; // Assign translated lyrics if available
+              lyrics = translatedLyrics;
             }
           }
-          console.log('Lyrics:', lyrics);
           BetterLyrics.App.lang = data.language;
           BetterLyrics.DOM.setRtlAttributes(data.isRtlLanguage);
 
@@ -102,47 +96,6 @@ BetterLyrics.Lyrics = {
     });
 
     const allZero = lyrics.every(item => item.startTimeMs === "0");
-    // let apiKey;
-    // try this out!
-    
-    // const target_language = "en";
-    // const translatedValues = BetterLyrics.Translation.translateTextUsingGPT(lyrics, target_language, apiKey);
-    // console.log(translatedValues);
-    // lyrics should be in the down size instead of being at the important so it might work
-    // if there is anything it would work
-    // if(apiKey !== null || apiKey || undefined || apiKey !== ""){
-      // BetterLyrics.Translation.onTranslationEnabled(items => {
-      //   target_language = items.translationLanguage || "en";
-      // });
-      
-      // let source_language = BetterLyrics.App.lang ?? "en";
-      // if (source_language !== target_language) {
-      //   BetterLyrics.Translation.translateTextUsingGPT(lyrics, target_language, apiKey).then(translatedLyrics => {
-      //     if (translatedLyrics) {
-      //       translatedLyrics.forEach((translatedLineObj) => {
-      //         let translatedLine = document.createElement("span");
-      //         translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
-    
-      //         if (translatedLineObj.translatedLines.trim() !== "♪" && translatedLineObj.translatedLines.trim() !== "") {
-      //           translatedLine.textContent = "\n" + translatedLineObj.translatedLines;
-      //           line.appendChild(translatedLine);
-      //         } else {
-      //           translatedLine.textContent = "\n" + "—";
-      //           line.appendChild(translatedLine);
-      //         }
-      //       });
-      //     } else {
-      //       // Handle translation failure
-      //       console.error("Translation failed.");
-      //     }
-      //   }).catch(error => {
-      //     console.error("Translation error:", error);
-      //   });
-      // }
-    // }
-    // const value = BetterLyrics.Translation.translateTextUsingGPT(lyrics, target_language, apiKey);
-    // console.log(value);
-    // console.log("original lyrics:" , lyrics);
 
     lyrics.forEach(item => {
       let line = document.createElement("div");
@@ -171,74 +124,24 @@ BetterLyrics.Lyrics = {
         line.appendChild(span);
       });
 
-      // console.log("Items hai idhar: 0" , JSON.stringify(words));
       if (translationEnable) {
-        // lyrics.forEach((item) => {
-          // console.log("Items hai idhar: 1", JSON.stringify(item));
           let translatedLine = document.createElement("span");
           translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
       
           if (item.words.trim() !== "♪" && item.words.trim() !== "") {
-            // Only call translateText if the translatedLine is not already present
             if (!item.translatedLines) {
               BetterLyrics.Translation.translateText(item.words, targetLanguage).then((result) => {
                 if (result && result.originalLanguage !== targetLanguage) {
-                  // console.log("Items hai idhar: 2", JSON.stringify(result));
-                  translatedLine.textContent = result.translatedText; // Only set the translated text
-                  line.appendChild(translatedLine); // Append the translated line immediately
+                  translatedLine.textContent = result.translatedText;
+                  line.appendChild(translatedLine);
                 }
               });
             } else {
-              // If translatedLine is already present, use it directly
-              // console.log("Items hai idhar: 3", JSON.stringify(item.translatedLines));
               translatedLine.textContent = item.translatedLines;
-              line.appendChild(translatedLine); // Append the translated line immediately
+              line.appendChild(translatedLine);
             }
           }
-        // });
       }
-      
-
-      // BetterLyrics.Translation.onTranslationEnabled((items) => {
-      //   console.log("Items hai idhar: primary" , items);
-      //   console.log("Items hai idhar: primary 1" , JSON.stringify(items));
-      //   items.forEach((item) => {
-      //     console.log("Items hai idhar: 1" , JSON.stringify(item)); // it should give me something that whether I am getting anything or not
-      //     console.log("Items hai idhar: 2" , item); // it should give me something that whether I am getting anything or not
-      //     console.log("Items hai idhar 3: " , item.json()); // it should give me something that whether I am getting anything or not
-      //     let translatedLine = document.createElement("span");
-      //     translatedLine.classList.add(BetterLyrics.Constants.TRANSLATED_LYRICS_CLASS);
-      
-      //     let source_language = BetterLyrics.App.lang ?? "en";
-      //     let target_language = items.translationLanguage || "en";
-      
-      //     // Check if a translation is needed
-      //     if (source_language !== target_language) {
-      //       if (item.words.trim() !== "♪" && item.words.trim() !== "") {
-      //         // Only call translateText if the translatedLine is not already present
-      //         if (!item.translatedLines) {
-      //           BetterLyrics.Translation.translateText(item.words, target_language).then((result) => {
-      //             if (result) {
-      //               if (result.originalLanguage !== target_language) {
-      //                 translatedLine.textContent = "\n" + result.translatedText;
-      //                 line.appendChild(translatedLine);
-      //               }
-      //             } else {
-      //               translatedLine.textContent = "\n" + "—";
-      //               line.appendChild(translatedLine);
-      //             }
-      //           });
-      //         } else {
-      //           // If translatedLine is already present, use it directly
-      //           translatedLine.textContent = "\n" + item.translatedLines;
-      //           line.appendChild(translatedLine);
-      //         }
-      //       }
-      //     }
-      //   });
-      // });
-      
-
       try {
         document.getElementsByClassName(BetterLyrics.Constants.LYRICS_CLASS)[0].appendChild(line);
       } catch (_err) {

@@ -33,7 +33,6 @@ BetterLyrics.Translation = {
   translateTextUsingGPT: async function (lyrics, targetLanguage, apiKey) {
     const url = 'https://api.openai.com/v1/chat/completions';
   
-    // Extract all 'words' from the lyrics object and join them with newlines
     const lyricsText = lyrics.map(line => line.words).join('\n');
   
     try {
@@ -54,19 +53,14 @@ BetterLyrics.Translation = {
         })
       });
       const data = await response.json();
-      // console.log(data);
       const translatedText = data.choices[0].message.content.trim();
   
-      // Split the translated text by newlines to handle each translated line
       const translatedLines = translatedText.split('\n');
-      // console.log(translatedLines);
   
-      // Map the translated lines back to the original lyrics format
       const translatedLyrics = lyrics.map((line, index) => ({
         ...line,
-        translatedLines: translatedLines[index] || line.words // Fallback to original words if translation is missing
+        translatedLines: translatedLines[index] || line.words
       }));
-      console.log(translatedLyrics);
   
       return translatedLyrics;
     } catch (error) {
