@@ -47,7 +47,7 @@ BetterLyrics.Translation = {
           messages: [
             {
               role: 'user',
-              content: `Translate the following lyrics into ${targetLanguage}, maintaining the structure and keeping each line separate with a newline character (\\n) after every line:\n\n${lyricsText}`
+              content: `Translate. Make the translation more colloquial when necessary, the following lyrics into ${targetLanguage}, maintaining the structure and keeping each line separate with a newline character (\\n) after every line:\n\n${lyricsText}`
             }
           ]
         })
